@@ -790,8 +790,10 @@ try {
                 const formData = new FormData(form);
                 const response = await fetch(SUBMISSION_SCRIPT_URL, { 
                     method: 'POST',
-                    mode: 'no-cors',  // 🟢 الإضافة رقم 1
-                    redirect: 'follow', // 🟢 الإضافة رقم 2
+                    
+
+                     
+              
 
                     body: formData
                 });
