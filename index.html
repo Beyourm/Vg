@@ -4,17 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>نموذج التسجيل</title>
-    <meta property="og:title" content="مؤسسة كن أنت" />
-    <meta property="og:description" content="انضم الآن وابدأ رحلتك نحو القمة. استثمر في نفسك، واصنع مستقبلك بالمعرفة." />
-    <meta property="og:image" content="https://skliliia.netlify.app/images/photo.jpg" />
-    <meta property="og:url" content="https://sklilia.netlify.app/index" />
+    <meta property="og:title" content="مؤسسة كن أنت للتدريب والتأهيل" />
+    <meta property="og:description" content="نصنع قادة الغد من خلال المعرفة. استثمر في نفسك، واستثمر في مستقبلك." />
+    <meta property="og:image" content="https://skillia.netlify.app/images/photo.jpg" />
+    <meta property="og:url" content="https://sklilia.netlify.app/Trainees_Records" />
     <meta property="og:type" content="website" />
     <meta property="og:locale" content="ar_AR" />
-
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="مؤسسة كن أنت">
-    <meta name="twitter:description" content="انضم الآن وابدأ رحلتك نحو القمة. استثمر في نفسك، واصنع مستقبلك بالمعرفة.">
-    <meta name="twitter:image" content="https://skliliia.netlify.app/images/photo.jpg">
+    
+    
+  <meta name="description" content="مؤسسة كن أنت للتدريب والتأهيل. نقدم دورات متخصصة في تطوير الذات، الأمن السيبراني، إدارة الأعمال، والمزيد.">
+  <meta name="keywords" content="دورات تدريبية، مؤسسة كن أنت، تطوير الذات، اليمن، صنعاء، دورات أونلاين، حفظ القرآن">
 
     <link rel="stylesheet" href="assets/fonts/tajawal.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
@@ -320,6 +319,7 @@
         /* ------------------------------------------- */
 
     </style>
+    <script src="url_longr.js"></script> 
 </head>
 <body>
 
@@ -431,11 +431,18 @@
             </div>
             <div class="error-message" id="marketer_id-error">يجب أن يكون المعرّف مكوناً من 6 حروف إنجليزية كبيرة متبوعة برقمين بالضبط (مثال: TRAINE01).</div>
             <div class="field-instructions">
-                ملاحظة: يجب أن يتكون من **8 حروف بالضبط** (6 حروف إنجليزية كبيرة + رقمين).
+                🎯 تنبيه مهم:
+
+يجب أن يتكوّن كود التخفيض من 8 أحرف بالضبط:
+6 أحرف كبيرة (A–Z) + رقمين (0–9).
+
+إذا لم يكن لديك كود، لا تقلق! استخدم الكود الافتراضي: TTTTTT11 ✨
             </div>
         </div>
-
+                	
         <input type="hidden" name="registrationDate" id="registration-date-input">
+    	<input type="hidden" name="status" value="N">
+
 
         <button type="submit" id="submit-btn" disabled>
             <span class="btn-text">أرسل بياناتك وسجل الآن</span>
@@ -456,16 +463,53 @@
         "الجزائر", "المغرب", "موريتانيا", "الصومال", "جيبوتي", "جزر القمر", "السعودية", 
         "اليمن", "الإمارات", "الكويت", "البحرين", "قطر", "سلطنة عمان"
     ];
+    
+    // 🛠️ وظيفة loadCourses أصبحت أبسط ولا تهتم بالتحديد من الرابط
+    const loadCourses = async (courseSelect, submitBtn, formMessage) => {
+        let coursesData = [];
+        try {
+            submitBtn.classList.add('loading');
+            submitBtn.disabled = true;
 
-    // رابط API الذي طلبته لتحميل الدورات
-    const COURSES_API_URL = "https://script.google.com/macros/s/AKfycbxHyHcUY1hN5K8o4POBiiEZTw2MK72TNyLdNGqXcTsdJRQ5xUP3BJxjZUxAyS5lg9PZOA/exec";
-    
-    
-    
-    // رابط إرسال البيانات
-    const SUBMISSION_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwaKXxxEPjBhU5dZ4m3hMCoIK2tepRn0uloHBzXwkG3Qxule9YcmJcQ7xiaesM0-p1t-w/exec";
-    //رابط التحقق
-    const VALIDATION_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyVaKjjFeQL2uy-6K_iCna6H1-nJuMnLjONJ8ZnEWDAb4B3GE15rY6PTj4Tb56GDBSCOw/exec";
+            // 🚨 هنا يجب أن يكون المتغير COURSES_API_URL معرفاً في ملف url_longr.js أو في مكان آخر
+            const response = await fetch(COURSES_API_URL); 
+            const data = await response.json();
+            
+            if (Array.isArray(data)) {
+                coursesData = data;
+            } else if (data && Array.isArray(data.courses)) {
+                coursesData = data.courses;
+            } else {
+                throw new Error('بيانات الدورات غير صالحة.');
+            }
+
+            courseSelect.innerHTML = '<option value="" disabled selected>اختر الدورة المناسبة لك</option>';
+
+            if (coursesData.length > 0) {
+                coursesData.forEach(courseName => {
+                    const option = document.createElement('option');
+                    option.value = courseName;
+                    option.textContent = courseName;
+                    courseSelect.appendChild(option);
+                });
+            } else {
+                courseSelect.innerHTML = '<option value="" disabled selected>❌ لا توجد دورات متاحة حاليًا</option>';
+            }
+
+        } catch (error) {
+            console.error('فشل تحميل الدورات:', error);
+            courseSelect.innerHTML = '<option value="" disabled selected>❌ فشل تحميل الدورات. يرجى تحديث الصفحة.</option>';
+            formMessage.style.display = 'block';
+            formMessage.className = 'error';
+            formMessage.textContent = '❌ تعذر تحميل قائمة الدورات من الخادم. يرجى التحقق من رابط API.';
+        } finally {
+            submitBtn.classList.remove('loading');
+            if (courseSelect.options.length > 1 && courseSelect.options[1].value !== '❌ لا توجد دورات متاحة حاليًا') {
+                submitBtn.disabled = false;
+            }
+        }
+    };
+
 
     document.addEventListener('DOMContentLoaded', () => {
         const form = document.getElementById('form');
@@ -515,53 +559,6 @@
         
         document.querySelectorAll('.error-message').forEach(el => el.style.display = 'none');
 
-        // ********** وظيفة جلب الدورات مع دعم كلا التنسيقين **********
-        const loadCourses = async () => {
-            let coursesData = [];
-            try {
-                submitBtn.classList.add('loading');
-                submitBtn.disabled = true;
-
-                const response = await fetch(COURSES_API_URL);
-                const data = await response.json();
-                
-                if (Array.isArray(data)) {
-                    coursesData = data;
-                } else if (data && Array.isArray(data.courses)) {
-                    coursesData = data.courses;
-                } else {
-                    throw new Error('بيانات الدورات غير صالحة.');
-                }
-
-                courseSelect.innerHTML = '<option value="" disabled selected>اختر الدورة المناسبة لك</option>';
-
-                if (coursesData.length > 0) {
-                    coursesData.forEach(courseName => {
-                        const option = document.createElement('option');
-                        option.value = courseName;
-                        option.textContent = courseName;
-                        courseSelect.appendChild(option);
-                    });
-                } else {
-                    courseSelect.innerHTML = '<option value="" disabled selected>❌ لا توجد دورات متاحة حاليًا</option>';
-                }
-
-            } catch (error) {
-                console.error('فشل تحميل الدورات:', error);
-                courseSelect.innerHTML = '<option value="" disabled selected>❌ فشل تحميل الدورات. يرجى تحديث الصفحة.</option>';
-                formMessage.style.display = 'block';
-                formMessage.className = 'error';
-                formMessage.textContent = '❌ تعذر تحميل قائمة الدورات من الخادم. يرجى التحقق من رابط API.';
-            } finally {
-                submitBtn.classList.remove('loading');
-                if (courseSelect.options.length > 1 && courseSelect.options[1].value !== '❌ لا توجد دورات متاحة حاليًا') {
-                    submitBtn.disabled = false;
-                }
-            }
-        };
-        loadCourses();
-        // **********************************************
-
         // تعبئة قائمة الدول العربية
         const countrySelect = document.getElementById('country');
         arabCountries.forEach(country => {
@@ -570,31 +567,47 @@
             option.textContent = country;
             countrySelect.appendChild(option);
         });
-
-        // التعامل مع رابط الدورة الخارجية (إن وجد)
+        
+        // 🔍 الحصول على معاملات URL
         const urlParams = new URLSearchParams(window.location.search);
         const courseParam = urlParams.get("course");
-        if (courseParam) {
-            const decodedCourseName = decodeURIComponent(courseParam);
-            const checkAndSelectCourse = () => {
-                let found = false;
-                for (let i = 0; i < courseSelect.options.length; i++) {
-                    if (courseSelect.options[i].value === decodedCourseName) {
-                        courseSelect.value = decodedCourseName;
-                        found = true;
-                        break;
-                    }
-                }
-                if (found) {
-                    formMainTitle.innerHTML = `📘 أنت تسجل الآن في: <span style="color:var(--accent-color);">${decodedCourseName}</span>`;
-                }
-            };
-             setTimeout(checkAndSelectCourse, 1500); 
-        }
-         
-                 // 🟢 الإضافة الجديدة هنا: تعبئة حقل marketer_id من الرابط
-        const marketerIdInput = document.getElementById('marketer_id');
         const marketerIdParam = urlParams.get('marketer_id');
+
+        // 1. فك تشفير اسم الدورة فوراً
+        const courseToSelect = courseParam ? decodeURIComponent(courseParam) : null; 
+
+        // ********** 🟢 آلية التحقق الثنائي (الحل الأبسط) **********
+        if (courseToSelect) {
+            // سيناريو 1: يوجد اسم دورة في الرابط (تحديد فوري وإخفاء الحقل)
+            
+            // 1. تحديث العنوان الرئيسي
+            formMainTitle.innerHTML = `📘 أنت تسجل الآن في: <span style="color:var(--accent-color);">${courseToSelect}</span>`;
+            
+            // 2. إخفاء مجموعة حقل الاختيار الأصلي
+            const courseGroup = courseSelect.closest('.input-group');
+            if (courseGroup) {
+                courseGroup.style.display = 'none';
+            }
+            
+            // 3. إنشاء حقل إدخال مخفي يحمل قيمة الدورة للإرسال
+            const hiddenInput = document.createElement('input');
+            hiddenInput.type = 'hidden';
+            hiddenInput.name = 'CourseName';        
+            hiddenInput.value = courseToSelect;  
+            form.appendChild(hiddenInput); 
+            
+            // 4. تعطيل متطلبات حقل الاختيار (للتأكد)
+            courseSelect.removeAttribute('required');
+            
+        } else {
+            // سيناريو 2: لا يوجد اسم دورة في الرابط (عرض الحقل وتحميل الدورات)
+            // نمرر المتغيرات المطلوبة للدالة
+            loadCourses(courseSelect, submitBtn, formMessage); 
+        }
+        // *******************************************************************
+         
+        // 🟢 الإضافة الجديدة هنا: تعبئة حقل marketer_id من الرابط
+        const marketerIdInput = document.getElementById('marketer_id');
         
         if (marketerIdParam && marketerIdInput) {
             // تعبئة الحقل وتحويل القيمة إلى حروف كبيرة
@@ -607,21 +620,39 @@
             // إخفاء رسالة التعليمات للحقل
             const fieldInstructions = marketerIdInput.closest('.input-group').querySelector('.field-instructions');
             if (fieldInstructions) fieldInstructions.style.display = 'none';
-
-            // تحديث شريط التقدم عند تعبئة الحقل
-            
         }
-        // 🛑 نهاية الإضافة 🛑
+         
+        // 🛑 بداية الإضافة الخاصة بكود TTTTTT11 🛑
+        if (!marketerIdParam && marketerIdInput) {
+            marketerIdInput.value = 'TTTTTT11';
+            
+            // جعل الحقل للقراءة فقط
+            marketerIdInput.readOnly = true; 
+            marketerIdInput.style.backgroundColor = '#f7f7f7';
+            marketerIdInput.style.cursor = 'not-allowed';
+            
+            // إخفاء رسالة التعليمات للحقل لأن الكود أصبح افتراضياً
+            const fieldInstructions = marketerIdInput.closest('.input-group').querySelector('.field-instructions');
+            if (fieldInstructions) fieldInstructions.style.display = 'none';
 
-         
-         
-         
+            // ✅ إضافة رسالة صغيرة للمستخدم لإعلامه بأن الكود تم تطبيقه تلقائيًا
+            const infoMsg = document.createElement('p');
+            infoMsg.textContent = '✨ تم تطبيق كود التخفيض الافتراضي تلقائيًا';
+            infoMsg.style.color = '#16a34a';
+            infoMsg.style.fontSize = '0.9rem';
+            infoMsg.style.marginTop = '5px';
+            marketerIdInput.closest('.input-group').appendChild(infoMsg);
+        }
+        // 🛑 نهاية الإضافة الخاصة بكود TTTTTT11 🛑
          
         // تحديث شريط التقدم
         const updateProgress = () => {
             let filledInputs = 0;
             inputs.forEach(input => {
-                if (input.value && input.checkValidity() && input.value !== "") {
+                // يجب فحص حقل course-name فقط إذا كان ظاهراً
+                if (input.id === 'course-name' && input.closest('.input-group').style.display === 'none') {
+                    // تجاهل الحقل إذا كان مخفياً (أي تم تعيين الدورة من الرابط)
+                } else if (input.value && input.checkValidity() && input.value !== "") {
                     filledInputs++;
                 }
             });
@@ -692,14 +723,14 @@
         // معالجة إرسال النموذج
         form.addEventListener('submit', async (e) => {
             
-            
-e.preventDefault(); // منع الإرسال مؤقتًا إلى أن نتحقق من كود المسوّق
-
+e.preventDefault(); 
+    
 // 🔍 التحقق من كود المسوّق قبل الإرسال
 const marketerId = document.getElementById('marketer_id').value.trim();
 
 try {
-  const validationResult = await validateMarketerCode(marketerId, VALIDATION_SCRIPT_URL);
+  // 🚨 يجب التأكد من تعريف الدالتين validateMarketerCode و VALIDATION_SCRIPT_URL في ملف validation.js
+  const validationResult = await validateMarketerCode(marketerId, VALIDATION_SCRIPT_URL); 
 
   if (validationResult.status === 'success') {
     console.log('✅ كود التخفيض ساري المفعول.');
@@ -722,17 +753,7 @@ try {
   submitBtn.classList.remove('loading');
   return;
 }
-
-
-
-
-
-
  
-
-
- 
-
           let isFormValid = form.checkValidity();
             const ageValue = parseInt(ageInput.value, 10);
             
@@ -784,17 +805,16 @@ try {
             submitBtn.disabled = true;
             submitBtn.classList.add('loading');
             formMessage.style.display = 'none';
+            const phoneInput = document.getElementById('phone');
+             phoneInput.value = phoneInput.value.replace(/\s/g, ''); 
+
 
             try {
                 // الخطوة 1: إرسال البيانات إلى قوقل شيت أولاً
+                // 🚨 هنا يجب أن يكون المتغير SUBMISSION_SCRIPT_URL معرفاً في ملف url_longr.js أو في مكان آخر
                 const formData = new FormData(form);
                 const response = await fetch(SUBMISSION_SCRIPT_URL, { 
                     method: 'POST',
-                    
-
-                     
-              
-
                     body: formData
                 });
 
@@ -816,7 +836,7 @@ try {
 🌍 البلد: ${data.country}
 📱 رقم الواتساب: ${data.phone}
 ✉️ البريد الإلكتروني: ${data.email}
-💬 تيليجرام: ${data.telegram || 'غير محدد'}
+?? تيليجرام: ${data.telegram || 'غير محدد'}
 🧾 كود التخفيض: ${data.marketer_id}
 
 🚀 تهانينا! تم تسجيلك في رحلتنا التعليمية.
@@ -856,39 +876,9 @@ try {
 
 
 
-<script>
-document.addEventListener('DOMContentLoaded', () => {
-    // 🔹 الحصول على معرف المسوق من الرابط
-    const urlParams = new URLSearchParams(window.location.search);
-    const marketerIdParam = urlParams.get('marketerId');
-
-    // 🔹 الحصول على حقل الإدخال في النموذج
-    const marketerIdInput = document.querySelector('#marketerId');
-
-    // 🔹 تعبئة الحقل وجعله للقراءة فقط وإخفاء التعليمات
-    if (marketerIdParam && marketerIdInput) {
-        const upperCaseId = marketerIdParam.toUpperCase();
-        marketerIdInput.value = upperCaseId;
-
-        // جعل الحقل للقراءة فقط لمنع المستخدم من التعديل
-        marketerIdInput.readOnly = true;
-        marketerIdInput.style.backgroundColor = '#f7f7f7';
-        marketerIdInput.style.cursor = 'not-allowed';
-
-        // إخفاء رسالة التعليمات للحقل
-        const fieldInstructions = marketerIdInput.closest('.input-group').querySelector('.field-instructions');
-        if (fieldInstructions) fieldInstructions.style.display = 'none';
-
-        // تحديث شريط التقدم
-        updateProgress();
-    }
-});
-</script>
-
-
-
-
-    
+<script src="url_longr.js"></script> 
+<script src="marketer_tracker.js"></script> 
 <script src="js/validation.js"></script>
+<script src="/tracker.js"></script>
 </body>
 </html>
