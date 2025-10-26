@@ -464,14 +464,14 @@
         "اليمن", "الإمارات", "الكويت", "البحرين", "قطر", "سلطنة عمان"
     ];
     
-    // 🛠️ وظيفة loadCourses أصبحت أبسط ولا تهتم بالتحديد من الرابط
+    // 🛠️ وظيفة loadCourses (لتحميل الدورات يدوياً عند عدم وجود رابط)
     const loadCourses = async (courseSelect, submitBtn, formMessage) => {
         let coursesData = [];
         try {
             submitBtn.classList.add('loading');
             submitBtn.disabled = true;
 
-            // 🚨 هنا يجب أن يكون المتغير COURSES_API_URL معرفاً في ملف url_longr.js أو في مكان آخر
+            // 🚨 COURSES_API_URL يجب أن يكون مُعرّفاً في ملف url_longr.js أو في مكان آخر بشكل عام
             const response = await fetch(COURSES_API_URL); 
             const data = await response.json();
             
@@ -601,7 +601,6 @@
             
         } else {
             // سيناريو 2: لا يوجد اسم دورة في الرابط (عرض الحقل وتحميل الدورات)
-            // نمرر المتغيرات المطلوبة للدالة
             loadCourses(courseSelect, submitBtn, formMessage); 
         }
         // *******************************************************************
@@ -645,18 +644,42 @@
         }
         // 🛑 نهاية الإضافة الخاصة بكود TTTTTT11 🛑
          
-        // تحديث شريط التقدم
+        // تحديث شريط التقدم (تم تعديله للتعامل مع الحقل المخفي)
         const updateProgress = () => {
             let filledInputs = 0;
+            const courseSelectGroup = courseSelect.closest('.input-group');
+            const isCourseSelectHidden = courseSelectGroup && courseSelectGroup.style.display === 'none';
+
             inputs.forEach(input => {
-                // يجب فحص حقل course-name فقط إذا كان ظاهراً
-                if (input.id === 'course-name' && input.closest('.input-group').style.display === 'none') {
-                    // تجاهل الحقل إذا كان مخفياً (أي تم تعيين الدورة من الرابط)
-                } else if (input.value && input.checkValidity() && input.value !== "") {
+                // تجاهل حقل الاختيار المنسدل الأصلي إذا كان مخفياً
+                if (input.id === 'course-name' && isCourseSelectHidden) {
+                    return; 
+                }
+                
+                if (input.value && input.checkValidity() && input.value !== "") {
                     filledInputs++;
                 }
             });
-            const progress = (filledInputs / totalInputs) * 100;
+            
+            // حساب الحقول الإجمالية المطلوبة (إجمالي الحقول ناقص حقل الدورة المخفي)
+            let finalTotalInputs = totalInputs;
+            
+            if (isCourseSelectHidden) {
+                 finalTotalInputs--;
+                 // إضافة الحقل المخفي الذي يحمل قيمة الدورة كحقل تم تعبئته
+                 const hiddenCourseInput = form.querySelector('input[name="CourseName"][type="hidden"]');
+                 if (hiddenCourseInput && hiddenCourseInput.value) {
+                     filledInputs++;
+                 }
+            }
+            
+            // التأكد من أن finalTotalInputs لا يساوي الصفر لتجنب القسمة على صفر
+            if (finalTotalInputs === 0) {
+                 progressBar.style.width = `100%`;
+                 return;
+            }
+
+            const progress = (filledInputs / finalTotalInputs) * 100;
             progressBar.style.width = `${progress}%`;
         };
 
@@ -666,16 +689,15 @@
             const errorMessage = input.closest('.input-group').querySelector('.error-message');
 
             input.addEventListener("input", () => {
-                // حالة العمر
+                // ... (منطق التحقق من العمر) ...
                 if (input.id === 'age') {
                     const ageValue = parseInt(input.value, 10);
-                    // التحقق من الحد الأقصى (99) والحد الأدنى (8)
                     if (ageValue > 99) {
                         input.classList.add('is-invalid');
                         const randomIndex = Math.floor(Math.random() * ageTooHighErrorMessages.length);
                         errorMessage.textContent = ageTooHighErrorMessages[randomIndex];
                         if (errorMessage) errorMessage.style.display = 'block';
-                    } else if (ageValue < 8 && input.value.length > 0) { // التحقق من الحد الأدنى
+                    } else if (ageValue < 8 && input.value.length > 0) {
                         input.classList.add('is-invalid');
                         errorMessage.textContent = "يجب أن لا يقل العمر عن 8 سنوات.";
                         if (errorMessage) errorMessage.style.display = 'block';
@@ -684,6 +706,7 @@
                         if (errorMessage) errorMessage.style.display = 'none';
                     }
                 }
+                // ... (نهاية منطق التحقق من العمر) ...
 
                 if (input.checkValidity() && input.value !== "") {
                     icon.style.color = "#28a745";
@@ -701,6 +724,7 @@
                 if (!isValid || isAgeInvalid) {
                     if (input.value !== "") {
                         input.classList.add('is-invalid');
+                        // ... (تحديث رسائل الخطأ للعمر والمسوق) ...
                         if (input.id === 'age') {
                              if (ageValue > 99) {
                                 const randomIndex = Math.floor(Math.random() * ageTooHighErrorMessages.length);
@@ -711,6 +735,7 @@
                         } else if (input.id === 'marketer_id' && input.value.length !== 8) {
                             errorMessage.textContent = "يجب أن يكون المعرّف مكوناً من 8 حروف بالضبط (6 حروف إنجليزية كبيرة متبوعة برقمين).";
                         }
+                        // ... (نهاية تحديث رسائل الخطأ) ...
                         if (errorMessage) errorMessage.style.display = 'block';
                     }
                 } else {
@@ -723,38 +748,40 @@
         // معالجة إرسال النموذج
         form.addEventListener('submit', async (e) => {
             
-e.preventDefault(); 
-    
-// 🔍 التحقق من كود المسوّق قبل الإرسال
-const marketerId = document.getElementById('marketer_id').value.trim();
+            e.preventDefault(); 
+            
+            // ... (كود التحقق من كود المسوق) ...
+            
+            // 🔍 التحقق من كود المسوّق قبل الإرسال
+            const marketerId = document.getElementById('marketer_id').value.trim();
 
-try {
-  // 🚨 يجب التأكد من تعريف الدالتين validateMarketerCode و VALIDATION_SCRIPT_URL في ملف validation.js
-  const validationResult = await validateMarketerCode(marketerId, VALIDATION_SCRIPT_URL); 
+            try {
+              // 🚨 يجب التأكد من تعريف الدالتين validateMarketerCode و VALIDATION_SCRIPT_URL في ملف validation.js
+              const validationResult = await validateMarketerCode(marketerId, VALIDATION_SCRIPT_URL); 
 
-  if (validationResult.status === 'success') {
-    console.log('✅ كود التخفيض ساري المفعول.');
-  } else if (validationResult.status === 'pending') {
-    alert(validationResult.message);
-    submitBtn.disabled = false;
-    submitBtn.classList.remove('loading');
-    return;
-  } else {
-    alert(validationResult.message || '❌ كود التخفيض غير صالح.');
-    submitBtn.disabled = false;
-    submitBtn.classList.remove('loading');
-    return;
-  }
+              if (validationResult.status === 'success') {
+                console.log('✅ كود التخفيض ساري المفعول.');
+              } else if (validationResult.status === 'pending') {
+                alert(validationResult.message);
+                submitBtn.disabled = false;
+                submitBtn.classList.remove('loading');
+                return;
+              } else {
+                alert(validationResult.message || '❌ كود التخفيض غير صالح.');
+                submitBtn.disabled = false;
+                submitBtn.classList.remove('loading');
+                return;
+              }
 
-} catch (error) {
-  alert('حدث خطأ أثناء التحقق من كود التخفيض. يرجى المحاولة لاحقًا.');
-  console.error(error);
-  submitBtn.disabled = false;
-  submitBtn.classList.remove('loading');
-  return;
-}
- 
-          let isFormValid = form.checkValidity();
+            } catch (error) {
+              alert('حدث خطأ أثناء التحقق من كود التخفيض. يرجى المحاولة لاحقًا.');
+              console.error(error);
+              submitBtn.disabled = false;
+              submitBtn.classList.remove('loading');
+              return;
+            }
+         
+            let isFormValid = form.checkValidity();
             const ageValue = parseInt(ageInput.value, 10);
             
             // تحقق إضافي للعمر
@@ -767,17 +794,45 @@ try {
              if (marketerIdInput && !marketerIdInput.checkValidity()) {
                  isFormValid = false;
              }
+             
+            // 🛑 التعديل الذي يحل مشكلة الإرسال 🛑
+            const courseSelectGroup = courseSelect.closest('.input-group');
+            const isCourseSelectHidden = courseSelectGroup && courseSelectGroup.style.display === 'none';
+            
+            if (isCourseSelectHidden) {
+                // إذا كان حقل الاختيار الأصلي مخفياً، نعتبر أن الدورة محددة وصالحة،
+                // ونضمن أن التحقق لم يُلغَ بسبب الحقل الأصلي.
+                const hiddenCourseInput = form.querySelector('input[name="CourseName"][type="hidden"]');
+                if (!hiddenCourseInput || !hiddenCourseInput.value) {
+                    isFormValid = false; // إذا لم يُنشأ الحقل المخفي، نعتبره غير صالح
+                } else {
+                    // إذا كان الحقل المخفي موجوداً، فالدورة صالحة. لا تفعل شيئاً (تجنب تغيير isFormValid)
+                }
+            } else {
+                // إذا كان الحقل مرئياً، تأكد من أنه تم اختيار قيمة (وهذا هو سلوك checkValidity() الطبيعي)
+                if (courseSelect.value === "") {
+                    isFormValid = false;
+                }
+            }
+            // 🛑 نهاية التعديل الذي يحل مشكلة الإرسال 🛑
 
 
             if (!isFormValid) {
                 inputs.forEach(input => {
                     const errorMessage = input.closest('.input-group').querySelector('.error-message');
+                    
+                    // 🛑 تجاهل حقل الدورة المخفي عند عرض رسائل الخطأ 🛑
+                    if (input.id === 'course-name' && isCourseSelectHidden) {
+                        return; 
+                    }
+                    
                     const isValid = input.checkValidity();
                     const ageValue = input.id === 'age' ? parseInt(input.value, 10) : null;
                     const isAgeInvalid = input.id === 'age' && (ageValue > 99 || ageValue < 8);
 
                     if (!isValid || isAgeInvalid) {
                         input.classList.add('is-invalid');
+                        // ... (منطق عرض رسائل الخطأ) ...
                         if (input.id === 'age') {
                             if (ageValue > 99) {
                                 const randomIndex = Math.floor(Math.random() * ageTooHighErrorMessages.length);
@@ -788,6 +843,7 @@ try {
                         } else if (input.id === 'marketer_id') {
                              errorMessage.textContent = "يجب أن يكون المعرّف مكوناً من 6 حروف إنجليزية كبيرة متبوعة برقمين بالضبط (مثال: TRAINE01).";
                         }
+                        // ... (نهاية منطق عرض رسائل الخطأ) ...
                         if (errorMessage) errorMessage.style.display = 'block';
                     } else {
                         input.classList.remove('is-invalid');
@@ -811,7 +867,7 @@ try {
 
             try {
                 // الخطوة 1: إرسال البيانات إلى قوقل شيت أولاً
-                // 🚨 هنا يجب أن يكون المتغير SUBMISSION_SCRIPT_URL معرفاً في ملف url_longr.js أو في مكان آخر
+                // 🚨 SUBMISSION_SCRIPT_URL يجب أن يكون مُعرّفاً
                 const formData = new FormData(form);
                 const response = await fetch(SUBMISSION_SCRIPT_URL, { 
                     method: 'POST',
@@ -874,9 +930,6 @@ try {
     });
 </script>
 
-
-
-<script src="url_longr.js"></script> 
 <script src="marketer_tracker.js"></script> 
 <script src="js/validation.js"></script>
 <script src="/tracker.js"></script>
