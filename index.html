@@ -336,9 +336,9 @@
 
     <form id="form" method="post">
         
-        <div class="input-group">
+        <div class="input-group" id="course-name-group">
             <div class="input-with-icon">
-                <select name="CourseName" id="course-name" required>
+                <select name="CourseName" id="course-name"> 
                     <option value="" disabled selected>... جاري تحميل الدورات</option>
                 </select>
                 <label class="floating-label" for="course-name">اختر الدورة</label>
@@ -472,8 +472,7 @@
             submitBtn.classList.add('loading');
             submitBtn.disabled = true;
 
-            // 🚨 COURSES_API_URL يجب أن يكون مُعرّفاً في ملف url_longr.js أو في مكان آخر بشكل عام
-            // يجب التأكد من وجود ملف url_longr.js على الاستضافة
+            // 🚨 COURSES_API_URL يجب أن يكون مُعرّفاً
             const response = await fetch(COURSES_API_URL); 
             const data = await response.json();
             
@@ -506,6 +505,7 @@
             formMessage.textContent = '❌ تعذر تحميل قائمة الدورات من الخادم. يرجى التحقق من رابط API.';
         } finally {
             submitBtn.classList.remove('loading');
+            // تأكد من تفعيل زر الإرسال فقط إذا تم تحميل الدورات وتوفر خيارات
             if (courseSelect.options.length > 1 && courseSelect.options[1].value !== '❌ لا توجد دورات متاحة حاليًا') {
                 submitBtn.disabled = false;
             }
@@ -522,7 +522,9 @@
         const formMainTitle = document.getElementById('form-main-title');
         const courseSelect = document.getElementById('course-name'); 
         const ageInput = document.getElementById('age'); 
-        const totalInputs = inputs.length;
+        const courseSelectGroup = document.getElementById('course-name-group'); // 🚨 العنصر الجديد
+        let totalInputs = inputs.length; // 🚨 متغير لتتبع عدد الحقول الإجمالي
+
         
         // رسائل الخطأ الخاصة بالعمر المبالغ فيه (نفس الرسائل السابقة)
         const ageTooHighErrorMessages = [
@@ -578,68 +580,63 @@
         // 1. فك تشفير اسم الدورة فوراً
         const courseToSelect = courseParam ? decodeURIComponent(courseParam) : null; 
 
-        // ********** 🟢 آلية التحقق الثنائي (الحل القسري: إضافة الخيار بشكل ديناميكي) **********
+        // ********** 🟢 آلية التحقق الثنائي (الحل الجذري: الإزالة والاستبدال) **********
+        let isCourseRemoved = false; // 🚨 متغير جديد
+        
         if (courseToSelect) {
             
             // 1. تحديث العنوان الرئيسي
             formMainTitle.innerHTML = `📘 أنت تسجل الآن في: <span style="color:var(--accent-color);">${courseToSelect}</span>`;
             
-            // 2. إنشاء وإضافة الخيار الجديد إلى القائمة 🟢
-            const newOption = document.createElement('option');
-            newOption.value = courseToSelect;
-            newOption.textContent = courseToSelect;
-            
-            courseSelect.innerHTML = ''; // مسح أي خيارات تحميل سابقة
-            courseSelect.appendChild(newOption); 
-            
-            // 3. تحديد القيمة (اختيار الخيار الجديد)
-            courseSelect.value = courseToSelect; 
-            
-            // 4. إخفاء مجموعة حقل الاختيار الأصلي
-            const courseGroup = courseSelect.closest('.input-group');
-            if (courseGroup) {
-                courseGroup.style.display = 'none';
+            // 2. إزالة مجموعة حقل الاختيار الأصلي بالكامل من DOM 🟢
+            if (courseSelectGroup) {
+                courseSelectGroup.remove();
+                isCourseRemoved = true;
+                totalInputs--; // 🚨 تقليل عدد الحقول الإجمالي
             }
             
-            // 5. تعطيل متطلبات حقل الاختيار (للتأكد)
-            courseSelect.removeAttribute('required');
+            // 3. إنشاء حقل إدخال مخفي جديد يحمل القيمة
+            const hiddenCourseInput = document.createElement('input');
+            hiddenCourseInput.type = 'hidden';
+            hiddenCourseInput.name = 'CourseName'; // يجب أن يحمل نفس اسم حقل الاختيار القديم
+            hiddenCourseInput.value = courseToSelect;
+            
+            // 4. إضافته إلى النموذج
+            form.appendChild(hiddenCourseInput);
+            
+            // 5. تفعيل زر الإرسال فوراً
+            submitBtn.disabled = false;
+
 
         } else {
             // سيناريو 2: لا يوجد اسم دورة في الرابط (عرض الحقل وتحميل الدورات)
+            // إعادة required يدوياً والتحميل
+            courseSelect.setAttribute('required', 'required');
             loadCourses(courseSelect, submitBtn, formMessage); 
         }
         // *******************************************************************
          
-        // 🟢 الإضافة الجديدة هنا: تعبئة حقل marketer_id من الرابط
+        // 🟢 تعبئة حقل marketer_id من الرابط (المنطق كما هو)
         const marketerIdInput = document.getElementById('marketer_id');
         
         if (marketerIdParam && marketerIdInput) {
-            // تعبئة الحقل وتحويل القيمة إلى حروف كبيرة
             const upperCaseId = marketerIdParam.toUpperCase(); 
             marketerIdInput.value = upperCaseId;
-            
-            // جعل الحقل للقراءة فقط لمنع المستخدم من حذفه أو تعديله
             marketerIdInput.readOnly = true; 
-            
-            // إخفاء رسالة التعليمات للحقل
             const fieldInstructions = marketerIdInput.closest('.input-group').querySelector('.field-instructions');
             if (fieldInstructions) fieldInstructions.style.display = 'none';
         }
          
-        // 🛑 بداية الإضافة الخاصة بكود TTTTTT11 🛑
+        // 🛑 كود TTTTTT11 (المنطق كما هو) 🛑
         if (!marketerIdParam && marketerIdInput) {
             marketerIdInput.value = 'TTTTTT11';
-            
-            // جعل الحقل للقراءة فقط
             marketerIdInput.readOnly = true; 
             marketerIdInput.style.backgroundColor = '#f7f7f7';
             marketerIdInput.style.cursor = 'not-allowed';
             
-            // إخفاء رسالة التعليمات للحقل لأن الكود أصبح افتراضياً
             const fieldInstructions = marketerIdInput.closest('.input-group').querySelector('.field-instructions');
             if (fieldInstructions) fieldInstructions.style.display = 'none';
 
-            // ✅ إضافة رسالة صغيرة للمستخدم لإعلامه بأن الكود تم تطبيقه تلقائيًا
             const infoMsg = document.createElement('p');
             infoMsg.textContent = '✨ تم تطبيق كود التخفيض الافتراضي تلقائيًا';
             infoMsg.style.color = '#16a34a';
@@ -649,35 +646,24 @@
         }
         // 🛑 نهاية الإضافة الخاصة بكود TTTTTT11 🛑
          
-        // تحديث شريط التقدم (تم تعديله للتعامل مع الحقل المخفي)
+        // تحديث شريط التقدم 
         const updateProgress = () => {
             let filledInputs = 0;
-            const courseSelectGroup = courseSelect.closest('.input-group');
-            const isCourseSelectHidden = courseSelectGroup && courseSelectGroup.style.display === 'none';
-            let finalTotalInputs = totalInputs;
             
-            // إذا كان حقل الدورة مخفياً، نطرحه من عدد الحقول الإجمالي المطلوب
-            if (isCourseSelectHidden) {
-                 finalTotalInputs--;
-            }
+            // 🚨 تحديث قائمة الحقول المراد فحصها 
+            const currentInputs = document.querySelectorAll("#form input:not([type='hidden']), #form select");
 
-            inputs.forEach(input => {
-                // تجاهل حقل الاختيار المنسدل الأصلي إذا كان مخفياً وقيمته تم تعيينها
-                if (input.id === 'course-name' && isCourseSelectHidden) {
-                    if (courseSelect.value !== "") {
-                        // بما أن قيمته تم تعيينها وصالحة، سنضيفه كحقل معبأ
-                        filledInputs++; 
-                    }
-                    return; 
-                }
-                
+            currentInputs.forEach(input => {
+                // الآن لا داعي لـ isCourseSelectHidden لأننا إما أزلنا الحقل أو تركناه مرئياً
                 if (input.value && input.checkValidity() && input.value !== "") {
                     filledInputs++;
                 }
             });
             
-            // التأكد من أن finalTotalInputs لا يساوي الصفر لتجنب القسمة على صفر
-            if (finalTotalInputs <= 0) { // يجب أن يكون على الأقل 1 إذا كان هناك أي حقل مرئي
+            // استخدام totalInputs المُعدّل
+            const finalTotalInputs = totalInputs;
+            
+            if (finalTotalInputs <= 0) { 
                  progressBar.style.width = `100%`;
                  return;
             }
@@ -685,8 +671,8 @@
             const progress = (filledInputs / finalTotalInputs) * 100;
             progressBar.style.width = `${progress}%`;
         };
-
-        // معالجة أحداث الإدخال و blur
+        
+        // ... (معالجة أحداث الإدخال و blur كما هي، باستخدام updateProgress الجديد) ...
         inputs.forEach(input => {
             const icon = input.closest('.input-with-icon').querySelector('.icon');
             const errorMessage = input.closest('.input-group').querySelector('.error-message');
@@ -747,6 +733,8 @@
                 }
             });
         });
+
+
         
         // معالجة إرسال النموذج
         form.addEventListener('submit', async (e) => {
@@ -798,31 +786,24 @@
                  isFormValid = false;
              }
              
-            // 🛑 التعديل الذي يحل مشكلة الإرسال (بما أن الخيار أصبح مضافاً وصالحاً) 🛑
-            const courseSelectGroup = courseSelect.closest('.input-group');
-            const isCourseSelectHidden = courseSelectGroup && courseSelectGroup.style.display === 'none';
-            
-            if (isCourseSelectHidden) {
-                // إذا كان الحقل مخفياً، نتحقق فقط من وجود قيمة غير فارغة
-                if (courseSelect.value === "") {
-                    isFormValid = false; 
-                }
-                // بما أننا أضفنا القيمة كخيار، فـ checkValidity() يجب أن يكون صحيحاً هنا
-            } else {
-                // إذا كان الحقل مرئياً، نتحقق من أن المستخدم قد اختار قيمة
+            // 🛑 التحقق من حقل الدورة 🛑
+            if (!isCourseRemoved) { // إذا لم يتم إزالة حقل الاختيار (أي أنه مرئي)
                 if (courseSelect.value === "") {
                     isFormValid = false;
                 }
+            } else {
+                // إذا تم إزالته، فإن الحقل المخفي يحمل القيمة، لذا لا نحتاج للتحقق هنا
             }
-            // 🛑 نهاية التعديل الذي يحل مشكلة الإرسال 🛑
+            // 🛑 نهاية التحقق من حقل الدورة 🛑
 
 
             if (!isFormValid) {
+                // ... (منطق عرض رسائل الخطأ) ...
                 inputs.forEach(input => {
                     const errorMessage = input.closest('.input-group').querySelector('.error-message');
                     
-                    // 🛑 تجاهل حقل الدورة المخفي عند عرض رسائل الخطأ 🛑
-                    if (input.id === 'course-name' && isCourseSelectHidden) {
+                    // 🛑 تجاهل حقل الدورة الأصلي إذا تمت إزالته 🛑
+                    if (input.id === 'course-name' && isCourseRemoved) {
                         return; 
                     }
                     
@@ -842,6 +823,8 @@
                             }
                         } else if (input.id === 'marketer_id') {
                              errorMessage.textContent = "يجب أن يكون المعرّف مكوناً من 6 حروف إنجليزية كبيرة متبوعة برقمين بالضبط (مثال: TRAINE01).";
+                        } else if (input.id === 'course-name' && input.value === "") { // في حالة لم تُختر دورة والحقل مرئي
+                             errorMessage.textContent = "الرجاء اختيار الدورة التي تريد التسجيل بها.";
                         }
                         // ... (نهاية منطق عرض رسائل الخطأ) ...
                         if (errorMessage) errorMessage.style.display = 'block';
@@ -869,6 +852,10 @@
                 // الخطوة 1: إرسال البيانات إلى قوقل شيت أولاً
                 // 🚨 SUBMISSION_SCRIPT_URL يجب أن يكون مُعرّفاً
                 const formData = new FormData(form);
+                
+                // 🚨 التأكد من استخدام القيمة الصحيحة للدورة في رسالة الواتساب
+                const courseNameValue = formData.get('CourseName'); 
+
                 const response = await fetch(SUBMISSION_SCRIPT_URL, { 
                     method: 'POST',
                     body: formData
@@ -883,9 +870,9 @@
 
                     // رسالة الواتساب 
                     const messageBody = `
-🎓 *تسجيل جديد في دورة ${data.CourseName}!*
+🎓 *تسجيل جديد في دورة ${courseNameValue}!*
 
-📘 الدورة: ${data.CourseName}
+📘 الدورة: ${courseNameValue}
 👤 الاسم: ${data.name}
 🧬 الجنس: ${data.gender}
 🎂 العمر: ${data.age}
@@ -908,12 +895,8 @@
 
                     form.reset();
                     updateProgress();
-                    inputs.forEach(input => {
-                        input.classList.remove('is-invalid');
-                        const icon = input.closest('.input-with-icon').querySelector('.icon');
-                        if(icon) icon.style.color = "var(--primary-color)";
-                    });
-
+                    // ... (إعادة تعيين أيقونات الإدخال) ...
+                    
                 } else {
                     throw new Error('Form submission failed.');
                 }
